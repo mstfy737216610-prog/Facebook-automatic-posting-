@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AdMan Facebook</title>
+<style>
+body{margin:0;font-family:Tahoma,Arial;background:#0d1117;color:#e6edf3}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:14px}
+.btn{background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.p{background:#1f6feb;border-color:#1f6feb}.btn.g{background:#238636;border-color:#238636}.btn.r{background:#da3633;border-color:#da3633}
+input,select,textarea{background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:8px;width:100%;box-sizing:border-box}
+label{display:block;margin:8px 0 4px;font-size:12px;color:#8b949e}
+main{padding:20px;max-width:1000px;margin:auto}
+.row{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.badge{font-size:11px;padding:2px 8px;border-radius:12px}
+.on{background:#23863633;color:#3fb950}.off{background:#da363333;color:#f85149}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{border-bottom:1px solid #30363d;padding:6px;text-align:right}
+h3{color:#58a6ff;margin:6px 0}
+.login{max-width:320px;margin:15vh auto;text-align:center}
+</style>
+</head>
+<body>
+<div id="login" class="login card">
+  <h2>📘 AdMan Facebook</h2>
+  <input type="password" id="pw" placeholder="كلمة المرور">
+  <button class="btn p" onclick="doLogin()">دخول</button>
+</div>
+<div id="app" style="display:none">
+<main>
+  <div class="row" style="justify-content:space-between">
+    <h2>📘 فيسبوك - حسابات ومجموعات</h2>
+    <div class="row">
+      <button class="btn" onclick="showTab('acc')">الحسابات</button>
+      <button class="btn" onclick="showTab('grp')">المجموعات</button>
+      <button class="btn" onclick="showTab('posts')">مكتبة المنشورات</button>
+      <button class="btn" onclick="showTab('log')">السجل</button>
+    </div>
+  </div>
+
+  <div id="t-acc" class="tab">
+    <div class="card">
+      <h3>إضافة حساب</h3>
+      <div class="row">
+        <input id="a-label" placeholder="اسم الحساب" style="width:200px">
+        <input id="a-proxy" placeholder="بروكسي (اختياري)" style="width:220px">
+        <button class="btn p" onclick="addAccount()">إضافة</button>
+      </div>
+    </div>
+    <div id="accounts"></div>
+  </div>
+
+  <div id="t-grp" class="tab" style="display:none">
+    <div class="card">
+      <div class="row">
+        <select id="g-niche" onchange="loadGroups()">
+          <option value="">كل الفئات</option><option value="masters">ماجستير</option>
+          <option value="phd">دكتوراه</option><option value="services">خدمات طلابية</option>
+          <option value="general">عام</option>
+        </select>
+        <select id="g-status" onchange="loadGroups()">
+          <option value="">كل الحالات</option><option value="new">جديدة</option>
+          <option value="approved">معتمدة</option><option value="excluded">مستبعدة</option>
+        </select>
+        <button class="btn" onclick="loadGroups()">تحديث</button>
+      </div>
+    </div>
+    <div class="card"><table id="groups"></table></div>
+  </div>
+
+  <div id="t-posts" class="tab" style="display:none">
+    <div class="card">
+      <h3>إضافة منشور للمكتبة (مصنف حسب الفئة المستهدفة)</h3>
+      <div class="row">
+        <select id="p-niche"><option value="masters">ماجستير</option><option value="phd">دكتوراه</option>
+        <option value="services">خدمات طلابية</option><option value="general">عام</option></select>
+        <input id="p-title" placeholder="عنوان المنشور" style="flex:1">
+      </div>
+      <textarea id="p-text" rows="5" placeholder="نص المنشور..."></textarea>
+      <div class="row">
+        <button class="btn p" onclick="addPost()">حفظ في المكتبة</button>
+        <button class="btn g" onclick="runCampaign()">🚀 تشغيل حملة النشر على هذه الفئة</button>
+      </div>
+    </div>
+    <div class="card"><div id="posts"></div></div>
+  </div>
+
+  <div id="t-log" class="tab" style="display:none">
+    <div class="card"><button class="btn" onclick="loadLogs()">تحديث</button><table id="logs"></table></div>
+  </div>
+</main>
+</div>
+<script>
+let T = localStorage.getItem("fb_token") || "";
+const $ = id => document.getElementById(id);
+async function api(p, o = {}) {
+  o.headers = Object.assign({"X-Auth-Token": T, "Content-Type": "application/json"}, o.headers || {});
+  if (o.body && typeof o.body !== "string") o.body = JSON.stringify(o.body);
+  const r = await fetch(p, o);
+  if (r.status === 401) { $("login").style.display = "block"; $("app").style.display = "none"; throw 0; }
+  return r.json();
+}
+async function doLogin() {
+  const r = await fetch("/api/login", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({password: $("pw").value})});
+  if (r.ok) { T = (await r.json()).token; localStorage.setItem("fb_token", T); boot(); }
+  else alert("خطأ");
+}
+function boot() { $("login").style.display = "none"; $("app").style.display = "block"; loadAccounts(); loadGroups(); loadPosts(); loadLogs(); }
+function showTab(t) { document.querySelectorAll(".tab").forEach(x => x.style.display = "none"); $("t-" + t).style.display = "block"; }
+
+async function loadAccounts() {
+  const a = await api("/api/accounts");
+  $("accounts").innerHTML = a.map(x => `<div class="card"><b>${esc(x.label)}</b> <span class="badge ${x.enabled?"on":"off"}">${x.enabled?"مفعّل":"معطّل"}</span>
+    <div class="row">
+      <button class="btn g" onclick="discover('${x.id}')">🔍 اكتشاف مجموعات</button>
+      <label style="margin:0">رفع كوكيز: <input type="file" id="ck-${x.id}" style="width:auto;display:inline"></label>
+      <button class="btn" onclick="uploadCookies('${x.id}')">رفع</button>
+      <button class="btn r" onclick="delAcc('${x.id}')">حذف</button>
+    </div><div id="dsc-${x.id}"></div></div>`).join("") || "لا حسابات";
+}
+async function addAccount() {
+  await api("/api/accounts", {method: "POST", body: {label: $("a-label").value, proxy: $("a-proxy").value || null}});
+  loadAccounts();
+}
+async function delAcc(id) { if (confirm("حذف؟")) { await api("/api/accounts/" + id, {method: "DELETE"}); loadAccounts(); } }
+async function discover(id) {
+  $("dsc-" + id).textContent = "⏳ يبحث... (قد يأخذ دقائق)";
+  const r = await api("/api/accounts/" + id + "/discover", {method: "POST", body: {}});
+  $("dsc-" + id).textContent = r.ok ? `✅ مجموعات جديدة: ${r.new_groups}` : "فشل - تأكد من الكوكيز";
+  loadGroups();
+}
+async function uploadCookies(id) {
+  const f = $("ck-" + id).files[0]; if (!f) return;
+  const fd = new FormData(); fd.append("file", f);
+  const r = await fetch("/api/accounts/" + id + "/cookies", {method: "POST", body: fd, headers: {"X-Auth-Token": T}});
+  alert(r.ok ? "حُفظت الكوكيز" : "فشل");
+}
+async function loadGroups() {
+  const g = await api(`/api/groups?niche=${$("g-niche").value}&status=${$("g-status").value}`);
+  $("groups").innerHTML = "<tr><th>الاسم</th><th>الفئة</th><th>الأعضاء</th><th>الحالة</th><th></th></tr>" +
+    g.map(x => `<tr><td>${esc(x.name || x.url)}</td><td>${x.niche}</td><td>${x.members || ""}</td>
+      <td>${x.status}</td><td>
+      <button class="btn g" onclick="gAct(${x.id},'approve')">✓</button>
+      <button class="btn r" onclick="gAct(${x.id},'exclude')">✗</button>
+      <select onchange="gAct(${x.id},'set_niche',{niche:this.value})">
+        <option value="">فئة...</option><option value="masters">ماجستير</option>
+        <option value="phd">دكتوراه</option><option value="services">خدمات</option><option value="general">عام</option>
+      </select></td></tr>`).join("");
+}
+async function gAct(id, act, payload) { await api(`/api/groups/${id}/${act}`, {method: "POST", body: payload || {}}); loadGroups(); }
+async function loadPosts() {
+  const p = await api("/api/posts");
+  $("posts").innerHTML = p.map(x => `<div class="card"><span class="badge on">${x.niche}</span> <b>${esc(x.title)}</b>
+    <div style="font-size:12px;color:#8b949e;white-space:pre-wrap">${esc(x.text.slice(0, 200))}</div>
+    <button class="btn r" onclick="delPost(${x.id})">حذف</button></div>`).join("") || "المكتبة فارغة";
+}
+async function addPost() {
+  await api("/api/posts", {method: "POST", body: {niche: $("p-niche").value, title: $("p-title").value, text: $("p-text").value}});
+  $("p-title").value = ""; $("p-text").value = ""; loadPosts();
+}
+async function delPost(id) { await api("/api/posts/" + id, {method: "DELETE"}); loadPosts(); }
+async function runCampaign() {
+  const niche = $("p-niche").value;
+  if (!confirm(`تشغيل حملة نشر فئة "${niche}" على كل الحسابات والمجموعات المعتمدة؟`)) return;
+  const r = await api("/api/campaign/run", {method: "POST", body: {niche}});
+  alert(r.ok ? "الحملة تعمل في الخلفية" : r.error);
+}
+async function loadLogs() {
+  const l = await api("/api/logs");
+  $("logs").innerHTML = "<tr><th>الحساب</th><th>المجموعة</th><th>النتيجة</th><th>الوقت</th></tr>" +
+    l.map(x => `<tr><td>${esc(x.account_id)}</td><td>${esc(x.group_url || "")}</td>
+      <td>${x.success ? "✅" : "❌ " + esc(x.error || "")}</td>
+      <td>${new Date(x.created_at * 1000).toLocaleString("ar")}</td></tr>`).join("");
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+(async () => { if (T) { try { await api("/api/accounts"); boot(); } catch (e) {} } })();
+</script>
+</body>
+</html>

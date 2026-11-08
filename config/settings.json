@@ -1,0 +1,19 @@
+{
+  "system": {
+    "name": "AdMan - Facebook Groups Bot",
+    "language": "ar",
+    "timezone": "Asia/Baghdad",
+    "web_host": "127.0.0.1",
+    "web_port": 8081,
+    "web_password": "change-me-123",
+    "posts_per_hour_per_account": 3,
+    "delay_between_accounts_sec": 20,
+    "delay_between_groups_sec": 90,
+    "ai_provider": "shared-config",
+    "_ai_note": "يمكنه استخدام نفس مفاتيح hcnsec/apinex من config/ai.json في هذا المجلد"
+  },
+  "accounts": [],
+  "targeting": {
+    "_comment": "تصنيف المجموعات حسب نوع المنشور: ماجستير، دكتوراه، خدمات، إلخ"
+  }
+}

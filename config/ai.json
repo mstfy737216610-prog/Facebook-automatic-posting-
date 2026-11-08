@@ -1,0 +1,19 @@
+{
+  "providers": [
+    {
+      "name": "hcnsec",
+      "base_url": "https://api.hcnsec.cn/v1",
+      "api_key": "sk-ZimPNQ7NBOAqouWIL9Wa15qczOorNkLY72ns3zUfxoUmU307",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "name": "apinex",
+      "base_url": "https://api.apinex.bond/v1",
+      "api_key": "sk-apx1d8db7940501007342eab9d6f57df57481b4dc468559e74",
+      "enabled": true,
+      "priority": 2
+    }
+  ],
+  "model": "glm-5.3-flash"
+}
